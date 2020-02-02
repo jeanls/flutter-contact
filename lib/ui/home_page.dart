@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:contatos/helpers/contact_helper.dart';
+import 'package:contatos/ui/contact_page.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -23,12 +24,33 @@ class _HomePageState extends State<HomePage> {
 //    c.email = "jean.leal22@gmail.com";
 //
 //    helper.saveContact(c);
+    _getAllContacts();
+  }
 
+  void _getAllContacts(){
     helper.getAllContacts().then((list) {
       setState(() {
         contacts = list;
       });
     });
+  }
+
+  void _showContactPage({Contact contact}) async {
+    final recContact = await Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) =>
+                ContactPage(
+                  contact: contact,
+                )));
+    if (recContact != null) {
+      if (contact != null) {
+        await helper.updateContact(recContact);
+      }else{
+        await helper.saveContact(recContact);
+      }
+      _getAllContacts();
+    }
   }
 
   @override
@@ -41,7 +63,9 @@ class _HomePageState extends State<HomePage> {
       ),
       backgroundColor: Colors.white,
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: () {
+          _showContactPage();
+        },
         child: Icon(Icons.add),
         backgroundColor: Colors.red,
       ),
@@ -57,6 +81,9 @@ class _HomePageState extends State<HomePage> {
 
   Widget _contactCard(BuildContext context, int index) {
     return GestureDetector(
+      onTap: () {
+        _showContactPage(contact: contacts[index]);
+      },
       child: Card(
         child: Padding(
           padding: EdgeInsets.all(10),
@@ -80,17 +107,15 @@ class _HomePageState extends State<HomePage> {
                     Text(
                       contacts[index].name ?? "",
                       style:
-                          TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                      TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                     ),
                     Text(
                       contacts[index].email ?? "",
-                      style:
-                      TextStyle(fontSize: 18),
+                      style: TextStyle(fontSize: 18),
                     ),
                     Text(
                       contacts[index].phone ?? "",
-                      style:
-                      TextStyle(fontSize: 18),
+                      style: TextStyle(fontSize: 18),
                     )
                   ],
                 ),
