@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:contatos/helpers/contact_helper.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 class ContactPage extends StatefulWidget {
   final Contact contact;
@@ -60,12 +61,21 @@ class _ContactPageState extends State<ContactPage> {
           child: Column(
             children: <Widget>[
               GestureDetector(
+                onTap: () {
+                  ImagePicker.pickImage(source: ImageSource.gallery)
+                      .then((file) {
+                    setState(() {
+                      _editedContact.img = file.path;
+                    });
+                  });
+                },
                 child: Container(
                   width: 140,
                   height: 140,
                   decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       image: DecorationImage(
+                          fit: BoxFit.cover,
                           image: _editedContact.img != null
                               ? FileImage(File(_editedContact.img))
                               : AssetImage("images/person.png"))),

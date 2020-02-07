@@ -4,6 +4,9 @@ import 'package:contatos/helpers/contact_helper.dart';
 import 'package:contatos/ui/contact_page.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+enum OrderOptions { orderAZ, orderZA }
 
 class HomePage extends StatefulWidget {
   @override
@@ -27,7 +30,7 @@ class _HomePageState extends State<HomePage> {
     _getAllContacts();
   }
 
-  void _getAllContacts(){
+  void _getAllContacts() {
     helper.getAllContacts().then((list) {
       setState(() {
         contacts = list;
@@ -39,14 +42,13 @@ class _HomePageState extends State<HomePage> {
     final recContact = await Navigator.push(
         context,
         MaterialPageRoute(
-            builder: (context) =>
-                ContactPage(
+            builder: (context) => ContactPage(
                   contact: contact,
                 )));
     if (recContact != null) {
       if (contact != null) {
         await helper.updateContact(recContact);
-      }else{
+      } else {
         await helper.saveContact(recContact);
       }
       _getAllContacts();
@@ -60,6 +62,17 @@ class _HomePageState extends State<HomePage> {
         title: Text("Contatos"),
         backgroundColor: Colors.red,
         centerTitle: true,
+        actions: <Widget>[
+          PopupMenuButton(
+            itemBuilder: (context) => <PopupMenuEntry<OrderOptions>>[
+              const PopupMenuItem(
+                  child: Text("A-Z"), value: OrderOptions.orderAZ),
+              const PopupMenuItem(
+                  child: Text("Z-A"), value: OrderOptions.orderZA)
+            ],
+            onSelected: _orderList,
+          )
+        ],
       ),
       backgroundColor: Colors.white,
       floatingActionButton: FloatingActionButton(
@@ -82,7 +95,7 @@ class _HomePageState extends State<HomePage> {
   Widget _contactCard(BuildContext context, int index) {
     return GestureDetector(
       onTap: () {
-        _showContactPage(contact: contacts[index]);
+        _showOptions(context, index);
       },
       child: Card(
         child: Padding(
@@ -95,6 +108,7 @@ class _HomePageState extends State<HomePage> {
                 decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     image: DecorationImage(
+                        fit: BoxFit.cover,
                         image: contacts[index].img != null
                             ? FileImage(File(contacts[index].img))
                             : AssetImage("images/person.png"))),
@@ -107,7 +121,7 @@ class _HomePageState extends State<HomePage> {
                     Text(
                       contacts[index].name ?? "",
                       style:
-                      TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                          TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                     ),
                     Text(
                       contacts[index].email ?? "",
@@ -125,5 +139,83 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
     );
+  }
+
+  void _showOptions(BuildContext context, int index) {
+    showModalBottomSheet(
+        context: context,
+        builder: (context) {
+          return BottomSheet(
+            builder: (context) {
+              return Container(
+                padding: EdgeInsets.all(10),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Padding(
+                      padding: EdgeInsets.all(10),
+                      child: FlatButton(
+                        child: Text(
+                          "Ligar",
+                          style: TextStyle(color: Colors.red, fontSize: 20),
+                        ),
+                        onPressed: () {
+                          launch("tel:${contacts[index].phone}");
+                          Navigator.pop(context);
+                        },
+                      ),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.all(10),
+                      child: FlatButton(
+                        child: Text(
+                          "Editar",
+                          style: TextStyle(color: Colors.red, fontSize: 20),
+                        ),
+                        onPressed: () {
+                          Navigator.pop(context);
+                          _showContactPage(contact: contacts[index]);
+                        },
+                      ),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.all(10),
+                      child: FlatButton(
+                        child: Text(
+                          "Excluir",
+                          style: TextStyle(color: Colors.red, fontSize: 20),
+                        ),
+                        onPressed: () {
+                          helper.deleteContact(contacts[index].id);
+                          setState(() {
+                            contacts.removeAt(index);
+                            Navigator.pop(context);
+                          });
+                        },
+                      ),
+                    )
+                  ],
+                ),
+              );
+            },
+            onClosing: () {},
+          );
+        });
+  }
+
+  void _orderList(OrderOptions value) {
+    switch (value) {
+      case OrderOptions.orderAZ:
+        contacts.sort((a, b) {
+          return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+        });
+        break;
+      case OrderOptions.orderZA:
+        contacts.sort((a, b) {
+          return b.name.toLowerCase().compareTo(a.name.toLowerCase());
+        });
+        break;
+    }
+    setState(() {});
   }
 }
